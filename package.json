@@ -1,0 +1,22 @@
+{
+  "name": "adam-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm --parallel -r run dev",
+    "dev:mock": "MOCK_MODE=true pnpm --parallel -r run dev",
+    "dev:backend": "pnpm --filter adam-backend run start:dev",
+    "dev:frontend": "pnpm --filter adam-frontend run dev",
+    "build": "pnpm -r run build",
+    "build:backend": "pnpm --filter adam-backend run build",
+    "build:frontend": "pnpm --filter adam-frontend run build",
+    "lint": "pnpm -r run lint",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "prettier": "^3.4.2"
+  }
+}
