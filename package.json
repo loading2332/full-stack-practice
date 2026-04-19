@@ -3,20 +3,28 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "pnpm --parallel -r run dev",
-    "dev:mock": "MOCK_MODE=true pnpm --parallel -r run dev",
-    "dev:backend": "pnpm --filter adam-backend run start:dev",
-    "dev:frontend": "pnpm --filter adam-frontend run dev",
+    "dev": "pnpm -r --parallel run dev",
+    "dev:mock": "cross-env MOCK_MODE=true pnpm -r --parallel run dev",
+    "dev:backend": "pnpm --filter ./backend run dev",
+    "dev:frontend": "pnpm --filter ./frontend run dev",
     "build": "pnpm -r run build",
-    "build:backend": "pnpm --filter adam-backend run build",
-    "build:frontend": "pnpm --filter adam-frontend run build",
+    "build:backend": "pnpm --filter ./backend run build",
+    "build:frontend": "pnpm --filter ./frontend run build",
     "lint": "pnpm -r run lint",
+    "lint-staged": "lint-staged",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "prepare": "husky"
   },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
   "devDependencies": {
+    "cross-env": "^10.1.0",
     "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
     "prettier": "^3.4.2"
   }
 }
