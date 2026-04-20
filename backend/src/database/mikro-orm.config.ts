@@ -26,7 +26,7 @@ export function getMikroOrmConfig(
     driver: PostgreSqlDriver,
     host: env.DB_HOST ?? '127.0.0.1',
     port: toPort(env.DB_PORT, 5432),
-    dbName: env.DB_NAME ?? 'adam_app',
+    dbName: env.DB_NAME ?? 'yam_app',
     user: env.DB_USER ?? 'postgres',
     password: env.DB_PASSWORD ?? 'postgres',
     debug: env.DB_DEBUG === 'true',
