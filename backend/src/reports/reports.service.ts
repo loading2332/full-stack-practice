@@ -26,10 +26,10 @@ export class ReportsService {
   }
 
   async getLatestReports(): Promise<Report[]> {
-    const res = (await this.em
+    const res = await this.em
       .createQueryBuilder(Report, 'r')
       .select('MAX(r.date) as maxDate')
-      .execute('get')) as { maxDate?: string | null } | null;
+      .execute('get');
 
     if (!res?.maxDate) {
       return [];
