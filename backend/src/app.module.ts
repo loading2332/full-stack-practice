@@ -13,6 +13,16 @@ import { getNestMikroOrmConfig } from './database/mikro-orm.config';
     MikroOrmModule.forRootAsync({
       useFactory: () => getNestMikroOrmConfig(),
     }),
+    SchedulerModule.forRoot(),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 20 }]),
+    GoogleAdsModule,
+    DiagnosisModule,
+    FeishuModule,
+    ReportsModule,
+    PipelineModule,
+    AgentModule,
+    ChatModule,
+    AuthModule, // 业务模块
   ],
   controllers: [AppController],
   providers: [AppService],
