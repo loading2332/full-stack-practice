@@ -22,8 +22,8 @@ describe('AgentService', () => {
 
   const configService = {
     get: jest.fn((key: string) => {
-      if (key === 'GOOGLE_ADS_CUSTOMER_IDS') {
-        return '123-456-7890,234-567-8901';
+      if (key === 'GITHUB_TRACKED_REPOSITORIES') {
+        return 'openai/openai-node#main,vercel/next.js#canary';
       }
       return undefined;
     }),
@@ -61,7 +61,7 @@ describe('AgentService', () => {
       expect.objectContaining({
         model,
         tools,
-        systemPrompt: expect.stringContaining('你是 A.D.A.M.'),
+        systemPrompt: expect.stringContaining('你是 GitHub Code Assistant'),
       }),
     );
   });

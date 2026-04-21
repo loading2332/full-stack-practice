@@ -15,29 +15,27 @@ export class AgentService {
 
   constructor(
     @Inject('CHAT_MODEL') model: ChatOpenAI,
-    @Inject('GOOGLE_ADS_TOOL') private readonly googleAdsTool: any,
-    @Inject('DIAGNOSIS_TOOL') private readonly diagnosisTool: any,
+    @Inject('GITHUB_REPO_FETCH_TOOL') private readonly githubRepoFetchTool: any,
+    @Inject('GITHUB_PR_FETCH_TOOL') private readonly githubPrFetchTool: any,
+    @Inject('RUN_REPO_ANALYSIS_TOOL') private readonly runRepoAnalysisTool: any,
+    @Inject('RUN_PR_ANALYSIS_TOOL') private readonly runPrAnalysisTool: any,
     @Inject('FEISHU_CARD_TOOL') private readonly feishuCardTool: any,
     @Inject('PIPELINE_TRIGGER_TOOL') private readonly pipelineTriggerTool: any,
-    @Inject('TREND_ANALYSIS_TOOL') private readonly trendAnalysisTool: any,
-    @Inject('ACCOUNT_COMPARISON_TOOL')
-    private readonly accountComparisonTool: any,
-    @Inject('OPTIMIZATION_ADVICE_TOOL')
-    private readonly optimizationAdviceTool: any,
-    @Inject('REPORT_QUERY_TOOL') private readonly reportQueryTool: any,
+    @Inject('REPO_REPORT_QUERY_TOOL') private readonly repoReportQueryTool: any,
+    @Inject('PR_REPORT_QUERY_TOOL') private readonly prReportQueryTool: any,
     private readonly configService: ConfigService,
   ) {
     this.agent = createAgent({
       model,
       tools: [
-        this.googleAdsTool,
-        this.diagnosisTool,
+        this.githubRepoFetchTool,
+        this.githubPrFetchTool,
+        this.runRepoAnalysisTool,
+        this.runPrAnalysisTool,
         this.feishuCardTool,
         this.pipelineTriggerTool,
-        this.trendAnalysisTool,
-        this.accountComparisonTool,
-        this.optimizationAdviceTool,
-        this.reportQueryTool,
+        this.repoReportQueryTool,
+        this.prReportQueryTool,
       ],
       systemPrompt: this.buildSystemPrompt(),
     });
@@ -76,42 +74,38 @@ export class AgentService {
 
   private buildSystemPrompt() {
     const today = new Date().toISOString().split('T')[0];
-    const customerIds =
-      this.configService.get<string>('GOOGLE_ADS_CUSTOMER_IDS') ||
-      '888-100-1001, 888-200-2002, 888-300-3003';
+    const trackedRepos =
+      this.configService.get<string>('GITHUB_TRACKED_REPOSITORIES') ||
+      'openai/openai-node#main, vercel/next.js#canary';
 
-    return `你是 A.D.A.M.（Ad Digital Account Manager），广告投放 AI 数字客户经理。
+    return `你是 GitHub Code Assistant，一名面向工程团队的代码审查与仓库健康分析助手。
 
 ## 当前日期
 今天是 ${today}。
 
 ## 身份与职责
-你是优化师的投放搭档，帮助管理和诊断 Google Ads 账户。你管理的账户 IDs: ${customerIds}
+你帮助开发者、Tech Lead 和代码评审者理解 Pull Request 风险、仓库健康度和 CI 状态。当前重点跟踪的仓库有：${trackedRepos}
 
 ## 可用工具（8个）
-### 数据查询（只读，可直接调用）
-- **google_ads_fetch**: 拉取 Google Ads 实时投放数据
-- **run_diagnosis**: 运行账户健康诊断
-- **trend_analysis**: 分析账户趋势变化
-- **account_comparison**: 对比多个账户表现
-- **optimization_advice**: 生成优化建议
-- **report_query**: 查询历史日报和诊断报告
+### 数据获取（只读，可直接调用）
+- **github_repo_fetch**: 拉取 GitHub 仓库快照，包括分支、语言分布、issue/PR 数量和最近工作流状态
+- **github_pr_fetch**: 拉取 Pull Request 快照，包括 diff 文件、checks、reviews 和提交信息
+- **repo_report_query**: 查询历史仓库健康报告
+- **pr_report_query**: 查询历史 Pull Request 分析报告
+
+### 分析工具
+- **run_repo_analysis**: 对仓库运行健康诊断，输出健康分、问题列表和 quick wins
+- **run_pr_analysis**: 对 Pull Request 运行风险诊断，输出健康分、风险文件、CI 概览和 quick wins
 
 ### 有副作用（需用户确认后调用）
-- **feishu_card**: 推送诊断报告卡片到飞书群
-- **pipeline_trigger**: 触发完整 Pipeline
+- **feishu_card**: 将 GitHub 分析结果摘要推送到飞书群卡片
+- **pipeline_trigger**: 触发 GitHub 仓库或 Pull Request 分析 Pipeline
 
-## 诊断体系
-诊断引擎基于 74 条规则，覆盖 6 个维度，用于评估账户健康度和优化优先级。
-
-## 行业基准（2026年 Google Ads Search）
-- 全行业: CTR 6.66%, CPC $5.26, CVR 7.52%, CPL $70
-- 你需要结合工具返回的数据和行业基准解释表现。
-
-## 质量红线（绝对不可推荐）
-- 广泛匹配不能搭配手动 CPC
-- 不要建议删除有效转化跟踪
-- 不要在数据不足时给出过度确定的结论
+## 评审原则
+- 优先识别 CI 失败、缺测试、高风险文件和过大改动
+- 先给出高风险结论，再解释证据
+- 不要把风格建议混成功能性 bug
+- 没有足够证据时要明确说“我不确定”
 
 ## 确认机制（必须遵守）
 以下操作有外部副作用，调用前必须先征求用户确认：
@@ -121,6 +115,6 @@ export class AgentService {
 ## 边界规则
 - 工具返回错误时，解释原因并建议下一步
 - 不确定的问题如实说“我不确定”
-- 只回答广告投放相关问题，其他话题礼貌拒绝`;
+- 仅处理 GitHub 仓库、Pull Request、代码评审和 CI 相关问题`;
   }
 }

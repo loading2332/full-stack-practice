@@ -9,24 +9,47 @@ export class ReportsController {
   @Get()
   async getReports(
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
+    @Query('scope') scope = 'repo',
   ) {
-    return this.reportsService.getReports(limit);
+    if (scope === 'pull_request') {
+      return this.reportsService.queryPullRequestReports({ limit });
+    }
+
+    return this.reportsService.queryRepoReports({ limit });
   }
 
   @Get('latest')
-  async getLatestReports() {
-    return this.reportsService.getLatestReports();
-  }
+  async getLatestReports(@Query('scope') scope = 'repo') {
+    if (scope === 'pull_request') {
+      return this.reportsService.getLatestPullRequestReports();
+    }
 
-  @Get('trend')
-  async getDailyTrend(
-    @Query('days', new DefaultValuePipe(7), ParseIntPipe) days: number,
-  ) {
-    return this.reportsService.getDailyTrend(days);
+    return this.reportsService.getLatestRepoReports();
   }
 
   @Get('by-date')
-  async getReportsByDate(@Query('date') date: string) {
-    return this.reportsService.getReportsByDate(date);
+  async getReportsByDate(
+    @Query('date') date: string,
+    @Query('scope') scope = 'repo',
+    @Query('owner') owner?: string,
+    @Query('repo') repo?: string,
+    @Query('prNumber') prNumber?: string,
+  ) {
+    if (scope === 'pull_request') {
+      return this.reportsService.queryPullRequestReports({
+        date,
+        owner,
+        repo,
+        prNumber: prNumber ? Number(prNumber) : undefined,
+        limit: 30,
+      });
+    }
+
+    return this.reportsService.queryRepoReports({
+      date,
+      owner,
+      repo,
+      limit: 30,
+    });
   }
 }

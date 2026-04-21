@@ -1,138 +1,129 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
+import { RequiredEntityData } from '@mikro-orm/core';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
-import { Report } from './reports.entity';
+import { PullRequestReport } from './pull-request-report.entity';
+import { RepoReport } from './repo-report.entity';
+
 @Injectable()
 export class ReportsService {
   constructor(
-    @InjectRepository(Report)
-    private readonly repo: EntityRepository<Report>,
-
+    @InjectRepository(RepoReport)
+    private readonly repoReportRepo: EntityRepository<RepoReport>,
+    @InjectRepository(PullRequestReport)
+    private readonly pullRequestReportRepo: EntityRepository<PullRequestReport>,
     private readonly em: EntityManager,
   ) {}
 
-  async saveReports(data: Partial<Report>): Promise<Report> {
-    const entity = await this.em.upsert(Report, data);
-    await this.em.flush();
+  async saveRepoReport(data: Partial<RepoReport>): Promise<RepoReport> {
+    const existing = await this.repoReportRepo.findOne({
+      owner: data.owner,
+      repo: data.repo,
+      branch: data.branch,
+      date: data.date,
+    });
 
+    if (existing) {
+      Object.assign(existing, data);
+      await this.em.persistAndFlush(existing);
+      return existing;
+    }
+
+    const entity = this.repoReportRepo.create(
+      data as RequiredEntityData<RepoReport>,
+    );
+    await this.em.persistAndFlush(entity);
     return entity;
   }
 
-  async getLatestReports(): Promise<Report[]> {
+  async savePullRequestReport(
+    data: Partial<PullRequestReport>,
+  ): Promise<PullRequestReport> {
+    const existing = await this.pullRequestReportRepo.findOne({
+      owner: data.owner,
+      repo: data.repo,
+      prNumber: data.prNumber,
+      date: data.date,
+    });
+
+    if (existing) {
+      Object.assign(existing, data);
+      await this.em.persistAndFlush(existing);
+      return existing;
+    }
+
+    const entity = this.pullRequestReportRepo.create(
+      data as RequiredEntityData<PullRequestReport>,
+    );
+    await this.em.persistAndFlush(entity);
+    return entity;
+  }
+
+  async getLatestRepoReports(): Promise<RepoReport[]> {
     const res = (await this.em
-      .createQueryBuilder(Report, 'r')
+      .createQueryBuilder(RepoReport, 'r')
       .select('MAX(r.date) as maxDate')
       .execute('get')) as { maxDate?: string } | null;
     if (!res?.maxDate) {
       return [];
     }
 
-    return this.repo.find({ date: res.maxDate }, { orderBy: { date: 'ASC' } });
-  }
-
-  async getReports(limit = 30): Promise<Report[]> {
-    return this.repo.findAll({
-      orderBy: { date: 'DESC', createdAt: 'DESC' },
-      limit,
-    });
-  }
-
-  async getDailyTrend(days = 7) {
-    const reports = await this.repo.findAll({
-      orderBy: { date: 'DESC' },
-      limit: days,
-    });
-
-    return [...reports].reverse().map((report) => ({
-      date: report.date,
-      customerId: report.customerId,
-      spend: report.spend,
-      clicks: report.clicks,
-      conversions: report.conversions,
-      diagnosisScore: report.diagnosisScore,
-    }));
-  }
-
-  async getReportsByDate(date: string): Promise<Report[]> {
-    return this.repo.find({ date }, { orderBy: { createdAt: 'DESC' } });
-  }
-
-  async getTrendAnalysis(input: { customerId: string; days: number }) {
-    const reports = await this.repo.find(
-      { customerId: input.customerId },
-      {
-        orderBy: { date: 'DESC' },
-        limit: input.days,
-      },
+    return this.repoReportRepo.find(
+      { date: res.maxDate },
+      { orderBy: { date: 'ASC' } },
     );
-
-    const ordered = [...reports].reverse();
-    return {
-      customerId: input.customerId,
-      days: input.days,
-      trend: ordered.map((report) => ({
-        date: report.date,
-        spend: report.spend,
-        clicks: report.clicks,
-        conversions: report.conversions,
-        diagnosisScore: report.diagnosisScore,
-      })),
-    };
   }
 
-  async compareAccounts(customerIds: string[]) {
-    const reports = await this.repo.find(
-      { customerId: { $in: customerIds } },
-      { orderBy: { date: 'DESC', createdAt: 'DESC' } },
-    );
-
-    const latestByAccount = new Map<string, Report>();
-    for (const report of reports) {
-      if (!latestByAccount.has(report.customerId)) {
-        latestByAccount.set(report.customerId, report);
-      }
+  async getLatestPullRequestReports(): Promise<PullRequestReport[]> {
+    const res = (await this.em
+      .createQueryBuilder(PullRequestReport, 'p')
+      .select('MAX(p.date) as maxDate')
+      .execute('get')) as { maxDate?: string } | null;
+    if (!res?.maxDate) {
+      return [];
     }
 
-    return customerIds.map((customerId) => {
-      const report = latestByAccount.get(customerId);
-      return {
-        customerId,
-        spend: report?.spend ?? null,
-        clicks: report?.clicks ?? null,
-        conversions: report?.conversions ?? null,
-        diagnosisScore: report?.diagnosisScore ?? null,
-        diagnosisGrade: report?.diagnosisGrade ?? null,
-      };
-    });
+    return this.pullRequestReportRepo.find(
+      { date: res.maxDate },
+      { orderBy: { date: 'ASC' } },
+    );
   }
 
-  async queryReports(input: {
-    customerId?: string;
+  async queryRepoReports(input: {
+    owner?: string;
+    repo?: string;
+    branch?: string;
     date?: string;
     limit: number;
   }) {
     const where: Record<string, unknown> = {};
-    if (input.customerId) {
-      where.customerId = input.customerId;
-    }
-    if (input.date) {
-      where.date = input.date;
-    }
+    if (input.owner) where.owner = input.owner;
+    if (input.repo) where.repo = input.repo;
+    if (input.branch) where.branch = input.branch;
+    if (input.date) where.date = input.date;
 
-    const reports = await this.repo.find(where, {
+    return this.repoReportRepo.find(where, {
       orderBy: { date: 'DESC', createdAt: 'DESC' },
       limit: input.limit,
     });
+  }
 
-    return reports.map((report) => ({
-      id: report.id,
-      customerId: report.customerId,
-      date: report.date,
-      spend: report.spend,
-      clicks: report.clicks,
-      conversions: report.conversions,
-      diagnosisScore: report.diagnosisScore,
-      diagnosisGrade: report.diagnosisGrade,
-    }));
+  async queryPullRequestReports(input: {
+    owner?: string;
+    repo?: string;
+    prNumber?: number;
+    date?: string;
+    limit: number;
+  }) {
+    const where: Record<string, unknown> = {};
+    if (input.owner) where.owner = input.owner;
+    if (input.repo) where.repo = input.repo;
+    if (input.prNumber !== undefined) where.prNumber = input.prNumber;
+    if (input.date) where.date = input.date;
+
+    return this.pullRequestReportRepo.find(where, {
+      orderBy: { date: 'DESC', createdAt: 'DESC' },
+      limit: input.limit,
+    });
   }
 }

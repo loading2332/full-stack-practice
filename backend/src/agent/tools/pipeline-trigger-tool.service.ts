@@ -16,14 +16,23 @@ export class PipelineTriggerToolService {
       {
         name: 'pipeline_trigger',
         description:
-          '触发完整投放诊断 Pipeline，属于有副作用操作，必须先得到用户确认。',
-        schema: z.object({
-          customerIds: z
-            .array(z.string())
-            .min(1)
-            .describe('要处理的账户 ID 列表'),
-          reason: z.string().optional().describe('触发原因'),
-        }),
+          '触发 GitHub 仓库或 Pull Request 分析 Pipeline，属于有副作用操作，必须先得到用户确认。',
+        schema: z.discriminatedUnion('scope', [
+          z.object({
+            scope: z.literal('repo'),
+            owner: z.string().describe('仓库 owner'),
+            repo: z.string().describe('仓库名'),
+            branch: z.string().optional().describe('目标分支'),
+            reason: z.string().optional().describe('触发原因'),
+          }),
+          z.object({
+            scope: z.literal('pull_request'),
+            owner: z.string().describe('仓库 owner'),
+            repo: z.string().describe('仓库名'),
+            prNumber: z.number().int().describe('Pull Request 编号'),
+            reason: z.string().optional().describe('触发原因'),
+          }),
+        ]),
       },
     );
   }

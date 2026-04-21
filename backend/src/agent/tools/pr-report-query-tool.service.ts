@@ -4,21 +4,23 @@ import { z } from 'zod';
 import { ReportsService } from '../../reports/reports.service';
 
 @Injectable()
-export class ReportQueryToolService {
+export class PrReportQueryToolService {
   readonly tool;
 
   constructor(private readonly reportsService: ReportsService) {
     this.tool = tool(
       async (input) => {
-        const result = await this.reportsService.queryReports(input);
+        const result = await this.reportsService.queryPullRequestReports(input);
         return JSON.stringify(result);
       },
       {
-        name: 'report_query',
+        name: 'pr_report_query',
         description:
-          '查询历史日报和诊断报告，适合按日期、账户或条数拉取过去的分析结果。',
+          '查询历史 Pull Request 分析报告，适合按 owner、repo、pr 编号或日期筛选。',
         schema: z.object({
-          customerId: z.string().optional().describe('筛选账户 ID'),
+          owner: z.string().optional().describe('仓库 owner'),
+          repo: z.string().optional().describe('仓库名'),
+          prNumber: z.number().int().optional().describe('Pull Request 编号'),
           date: z.string().optional().describe('筛选日期，格式 YYYY-MM-DD'),
           limit: z
             .number()
