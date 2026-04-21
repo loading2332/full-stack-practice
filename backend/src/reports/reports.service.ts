@@ -1,5 +1,4 @@
 import { InjectRepository } from '@mikro-orm/nestjs';
-import { RequiredEntityData } from '@mikro-orm/core';
 import { EntityManager, EntityRepository } from '@mikro-orm/postgresql';
 import { Injectable } from '@nestjs/common';
 import { PullRequestReport } from './pull-request-report.entity';
@@ -16,47 +15,17 @@ export class ReportsService {
   ) {}
 
   async saveRepoReport(data: Partial<RepoReport>): Promise<RepoReport> {
-    const existing = await this.repoReportRepo.findOne({
-      owner: data.owner,
-      repo: data.repo,
-      branch: data.branch,
-      date: data.date,
+    return this.em.upsert(RepoReport, data, {
+      onConflictFields: ['owner', 'repo', 'branch', 'date'],
     });
-
-    if (existing) {
-      Object.assign(existing, data);
-      await this.em.persistAndFlush(existing);
-      return existing;
-    }
-
-    const entity = this.repoReportRepo.create(
-      data as RequiredEntityData<RepoReport>,
-    );
-    await this.em.persistAndFlush(entity);
-    return entity;
   }
 
   async savePullRequestReport(
     data: Partial<PullRequestReport>,
   ): Promise<PullRequestReport> {
-    const existing = await this.pullRequestReportRepo.findOne({
-      owner: data.owner,
-      repo: data.repo,
-      prNumber: data.prNumber,
-      date: data.date,
+    return this.em.upsert(PullRequestReport, data, {
+      onConflictFields: ['owner', 'repo', 'prNumber', 'date'],
     });
-
-    if (existing) {
-      Object.assign(existing, data);
-      await this.em.persistAndFlush(existing);
-      return existing;
-    }
-
-    const entity = this.pullRequestReportRepo.create(
-      data as RequiredEntityData<PullRequestReport>,
-    );
-    await this.em.persistAndFlush(entity);
-    return entity;
   }
 
   async getLatestRepoReports(): Promise<RepoReport[]> {

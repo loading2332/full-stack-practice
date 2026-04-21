@@ -13,6 +13,24 @@ export class FeishuService {
 
   constructor(private readonly configService: ConfigService) {}
 
+  private async postCard(webhookUrl: string, card: Record<string, unknown>) {
+    const response = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(card),
+    });
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      this.logger.warn(
+        `Feishu push failed with status ${response.status}: ${responseText}`,
+      );
+      return false;
+    }
+
+    return true;
+  }
+
   async pushCard(input: PushCardInput) {
     return {
       ok: true,
@@ -161,13 +179,7 @@ export class FeishuService {
     };
 
     try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(card),
-      });
-      await response.json();
-      return true;
+      return await this.postCard(webhookUrl, card);
     } catch (error) {
       this.logger.error(`Feishu push failed: ${(error as Error).message}`);
       return false;
@@ -286,13 +298,7 @@ export class FeishuService {
     };
 
     try {
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(card),
-      });
-      await response.json();
-      return true;
+      return await this.postCard(webhookUrl, card);
     } catch (error) {
       this.logger.error(`Feishu push failed: ${(error as Error).message}`);
       return false;

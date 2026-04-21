@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { PipelineService } from './pipeline.service';
 
 @Controller('pipeline')
@@ -17,12 +17,13 @@ export class PipelineController {
       reason?: string;
     },
   ) {
-    if (
-      body?.scope === 'pull_request' &&
-      body.owner &&
-      body.repo &&
-      body.prNumber
-    ) {
+    if (body?.scope === 'pull_request') {
+      if (!body.owner || !body.repo || body.prNumber === undefined) {
+        throw new BadRequestException(
+          'pull_request scope requires owner, repo, and prNumber',
+        );
+      }
+
       return this.pipelineService.trigger({
         scope: 'pull_request',
         owner: body.owner,
@@ -32,7 +33,11 @@ export class PipelineController {
       });
     }
 
-    if (body?.scope === 'repo' && body.owner && body.repo) {
+    if (body?.scope === 'repo') {
+      if (!body.owner || !body.repo) {
+        throw new BadRequestException('repo scope requires owner and repo');
+      }
+
       return this.pipelineService.trigger({
         scope: 'repo',
         owner: body.owner,
@@ -40,6 +45,12 @@ export class PipelineController {
         branch: body.branch,
         reason: body.reason,
       });
+    }
+
+    if (body?.scope) {
+      throw new BadRequestException(
+        'scope must be either "repo" or "pull_request"',
+      );
     }
 
     return this.pipelineService.runTrackedRepositories(new Date());

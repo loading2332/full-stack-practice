@@ -1,3 +1,4 @@
+import { BadRequestException } from '@nestjs/common';
 import { PipelineController } from './pipeline.controller';
 
 describe('PipelineController', () => {
@@ -65,5 +66,25 @@ describe('PipelineController', () => {
         score: 76,
       },
     ]);
+  });
+
+  it('rejects malformed pull_request requests instead of running tracked repositories', async () => {
+    const pipelineService = {
+      runTrackedRepositories: jest.fn(),
+      trigger: jest.fn(),
+    };
+
+    const controller = new PipelineController(pipelineService as never);
+
+    await expect(
+      controller.runAll({
+        scope: 'pull_request',
+        owner: 'openai',
+        repo: 'openai-node',
+      }),
+    ).rejects.toBeInstanceOf(BadRequestException);
+
+    expect(pipelineService.runTrackedRepositories).not.toHaveBeenCalled();
+    expect(pipelineService.trigger).not.toHaveBeenCalled();
   });
 });

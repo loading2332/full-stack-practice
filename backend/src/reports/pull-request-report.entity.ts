@@ -1,4 +1,4 @@
-import { Entity, PrimaryKey, Property } from '@mikro-orm/core';
+import { Entity, PrimaryKey, Property, Unique } from '@mikro-orm/core';
 
 type ReportFinding = {
   ruleId: string;
@@ -22,6 +22,7 @@ type CategoryScore = {
 };
 
 @Entity()
+@Unique({ properties: ['owner', 'repo', 'prNumber', 'date'] })
 export class PullRequestReport {
   @PrimaryKey()
   id!: number;

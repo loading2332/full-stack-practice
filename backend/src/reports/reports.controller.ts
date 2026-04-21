@@ -1,6 +1,24 @@
-import { Controller, DefaultValuePipe, ParseIntPipe } from '@nestjs/common';
-import { Get, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Controller,
+  DefaultValuePipe,
+  Get,
+  ParseIntPipe,
+  Query,
+} from '@nestjs/common';
 import { ReportsService } from './reports.service';
+
+type ReportScope = 'repo' | 'pull_request';
+
+function parseScope(scope: string | undefined): ReportScope {
+  if (!scope || scope === 'repo' || scope === 'pull_request') {
+    return (scope ?? 'repo') as ReportScope;
+  }
+
+  throw new BadRequestException(
+    'scope must be either "repo" or "pull_request"',
+  );
+}
 
 @Controller('reports')
 export class ReportsController {
@@ -11,7 +29,9 @@ export class ReportsController {
     @Query('limit', new DefaultValuePipe(30), ParseIntPipe) limit: number,
     @Query('scope') scope = 'repo',
   ) {
-    if (scope === 'pull_request') {
+    const parsedScope = parseScope(scope);
+
+    if (parsedScope === 'pull_request') {
       return this.reportsService.queryPullRequestReports({ limit });
     }
 
@@ -20,7 +40,9 @@ export class ReportsController {
 
   @Get('latest')
   async getLatestReports(@Query('scope') scope = 'repo') {
-    if (scope === 'pull_request') {
+    const parsedScope = parseScope(scope);
+
+    if (parsedScope === 'pull_request') {
       return this.reportsService.getLatestPullRequestReports();
     }
 
@@ -35,7 +57,9 @@ export class ReportsController {
     @Query('repo') repo?: string,
     @Query('prNumber') prNumber?: string,
   ) {
-    if (scope === 'pull_request') {
+    const parsedScope = parseScope(scope);
+
+    if (parsedScope === 'pull_request') {
       return this.reportsService.queryPullRequestReports({
         date,
         owner,
