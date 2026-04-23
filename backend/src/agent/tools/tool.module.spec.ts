@@ -28,7 +28,8 @@ describe('buildToolProvider', () => {
       FakeToolService,
       { name: 'mock-tool' },
       false,
-    ) as Provider & {
+    ) as {
+      provide: string;
       inject?: unknown[];
       useFactory?: (svc: FakeToolService) => unknown;
     };

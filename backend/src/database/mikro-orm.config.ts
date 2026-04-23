@@ -1,6 +1,7 @@
 import { Options } from '@mikro-orm/core';
 import { MikroOrmModuleSyncOptions } from '@mikro-orm/nestjs';
 import { PostgreSqlDriver } from '@mikro-orm/postgresql';
+import { ChatSession } from '../chat/chat-session.entity';
 import { PullRequestReport } from '../reports/pull-request-report.entity';
 import { RepoReport } from '../reports/repo-report.entity';
 
@@ -26,8 +27,8 @@ export function getMikroOrmConfig(
 ): Options<PostgreSqlDriver> {
   return {
     driver: PostgreSqlDriver,
-    entities: [RepoReport, PullRequestReport],
-    entitiesTs: [RepoReport, PullRequestReport],
+    entities: [RepoReport, PullRequestReport, ChatSession],
+    entitiesTs: [RepoReport, PullRequestReport, ChatSession],
     host: env.DB_HOST ?? '127.0.0.1',
     port: toPort(env.DB_PORT, 5432),
     dbName: env.DB_NAME ?? 'adam_app',

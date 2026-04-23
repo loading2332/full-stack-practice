@@ -101,10 +101,26 @@ pnpm dev
 - `pnpm dev:frontend`: 启动前端
 - `pnpm build`: 构建 workspace
 - `pnpm lint`: 运行 ESLint
+- `pnpm --filter ./frontend test`: 运行前端 route handler 与 `components/chat/` UI/helper 测试
 - `pnpm --filter ./backend test`: 运行后端单测
 - `pnpm --filter ./backend exec jest --runInBand`: 串行运行全部后端测试
 - `pnpm --filter ./backend run db:generate`: 生成 MikroORM migration
 - `pnpm --filter ./backend run db:up`: 执行 migration
+
+## Chat Workspace
+
+前端的 [`/chat`](http://localhost:3000/chat) 现在是一个独立的 GitHub code assistant operator console：
+
+- 左侧是会话列表，支持新建、切换、删除历史会话
+- 中间是流式聊天线程，承接 `useChat()` 的 SSE 回复和 inline tool cards
+- 右侧是 run context，汇总当前线程的 tool timeline、最近完成的动作和 session 状态
+- 窄屏下，会话面板和 run context 会切换到顶部按钮打开的 side sheet
+
+会话会在每轮回复结束后自动保存；首次使用新数据库时，记得先执行一次：
+
+```bash
+pnpm --filter ./backend run db:up
+```
 
 ## API 示例
 
@@ -164,10 +180,16 @@ curl "http://localhost:3001/reports/by-date?scope=pull_request&owner=openai&repo
 
 ### 7. Agent 聊天流接口
 
-后端聊天入口是：
+前端应通过 Next.js BFF 代理访问聊天接口：
 
 ```text
-POST /chat/stream
+POST /api/chat
+```
+
+该代理会把请求转发到后端聊天入口：
+
+```text
+POST /chat
 ```
 
 请求体最小示例：
@@ -189,7 +211,7 @@ POST /chat/stream
 }
 ```
 
-这是一个流式接口，适合前端用 Vercel AI SDK 的 `useChat()` 一类能力对接。
+这是一个 SSE 流式接口，适合前端用 Vercel AI SDK 的 `useChat()` 一类能力对接。
 
 ## 当前数据库表
 
